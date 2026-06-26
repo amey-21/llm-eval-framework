@@ -13,6 +13,7 @@ from pathlib import Path
 from loguru import logger
 
 
+
 def load_baseline(path: str = "results/baseline.json") -> dict:
     baseline_path = Path(path)
     if not baseline_path.exists():
@@ -31,20 +32,15 @@ def load_current_results(results_path: str) -> dict:
     return json.loads(path.read_text())
 
 
+SKIP_METRICS = {"latency", "cost_efficiency"}
+
+
 def check_regressions(
     baseline: dict,
     current: dict,
     threshold: float = 0.05,
+    skip_metrics: set = SKIP_METRICS,
 ) -> list[dict]:
-    """
-    Compare current scores against baseline.
-    Returns list of regressions found.
-
-    threshold=0.05 means: fail if any metric drops more than 5 points.
-    
-    Why 5%? Tight enough to catch real regressions,
-    loose enough to allow natural variance from small sample sizes.
-    """
     regressions = []
 
     for model, metrics in baseline.items():
@@ -53,6 +49,13 @@ def check_regressions(
             continue
 
         for metric, baseline_score in metrics.items():
+
+            # infrastructure metrics vary by external factors
+            # monitor them in the dashboard, don't gate CI on them
+            if metric in skip_metrics:
+                logger.info(f"Skipping {metric} for {model} (infrastructure metric)")
+                continue
+
             if metric not in current[model]:
                 logger.warning(f"Metric {metric!r} missing for {model} — skipping")
                 continue

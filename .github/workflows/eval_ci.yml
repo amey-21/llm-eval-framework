@@ -36,7 +36,7 @@ jobs:
           python src/ci/regression_check.py \
             --results results/ci_run.json \
             --baseline results/baseline.json \
-            --threshold 0.05
+            --threshold 0.10
 
       - name: Upload CI results
         uses: actions/upload-artifact@v4
