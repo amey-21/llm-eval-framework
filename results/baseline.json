@@ -1,26 +1,26 @@
 {
   "gpt-4o-mini": {
-    "factual_accuracy": 0.65,
-    "latency": 0.8028,
-    "cost_efficiency": 0.9795,
-    "instruction_following": 1.0
+    "factual_accuracy": 0.62,
+    "latency": 0.8851,
+    "cost_efficiency": 0.9804,
+    "instruction_following": 0.996
   },
   "llama-3.1-8b-instant": {
-    "factual_accuracy": 0.45,
+    "factual_accuracy": 0.54,
     "latency": 1.0,
-    "cost_efficiency": 0.9911,
-    "instruction_following": 0.885
+    "cost_efficiency": 0.9917,
+    "instruction_following": 0.892
   },
   "llama-3.3-70b-versatile": {
-    "factual_accuracy": 0.85,
-    "latency": 0.9422,
-    "cost_efficiency": 0.9031,
-    "instruction_following": 0.96
+    "factual_accuracy": 0.74,
+    "latency": 0.8747,
+    "cost_efficiency": 0.8946,
+    "instruction_following": 0.91
   },
   "openai/gpt-oss-120b": {
-    "factual_accuracy": 0.9,
-    "latency": 0.6766,
-    "cost_efficiency": 0.9719,
-    "instruction_following": 0.99
+    "factual_accuracy": 0.84,
+    "latency": 0.6065,
+    "cost_efficiency": 0.974,
+    "instruction_following": 1.0
   }
 }
