@@ -57,7 +57,7 @@ async def main():
     ]
 
     loader = DatasetLoader()
-    samples = loader.load("mmlu", sample_size=20)
+    samples = loader.load("mmlu", sample_size=20, seed=42)
     logger.info(f"CI eval: {len(samples)} samples × {len(clients)} models")
 
     # results[model_name][metric_name] = list of scores

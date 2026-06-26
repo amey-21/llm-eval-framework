@@ -41,7 +41,10 @@ class DatasetLoader:
     def __init__(self, seed: int = 42):
         self.rng = random.Random(seed)
 
-    def load(self, dataset_name: str, sample_size: int = 50) -> list[EvalSample]:
+    # def load(self, dataset_name: str, sample_size: int = 50, seed: int = 42) -> list[EvalSample]:
+    def load(self, dataset_name: str, sample_size: int = 50, seed: int = None) -> list[EvalSample]:
+        if seed is not None:
+            random.seed(seed)
         """
         Public interface — loads any supported dataset.
         
@@ -87,7 +90,7 @@ class DatasetLoader:
         )
 
         # shuffle so we get diverse subjects, not just the first subject
-        indices = self.rng.sample(range(len(dataset)), min(sample_size, len(dataset)))
+        indices = random.sample(range(len(dataset)), min(sample_size, len(dataset)))
 
         samples = []
         for i, idx in enumerate(indices):
