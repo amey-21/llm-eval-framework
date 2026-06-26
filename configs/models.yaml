@@ -1,0 +1,40 @@
+# configs/models.yaml
+# This is the single source of truth for all models in the system.
+# To add a new model, add an entry here. No Python files change.
+
+models:
+  - name: gpt-4o-mini
+    provider: openai
+    client_class: OpenAIClient
+    display_name: "GPT-4o Mini"
+    context_window: 128000
+    pricing:
+      input_per_1k: 0.00015
+      output_per_1k: 0.0006
+
+  - name: llama-3.1-8b-instant
+    provider: groq
+    client_class: GroqClient
+    display_name: "Llama 3.1 8B (Groq)"
+    context_window: 131072
+    pricing:
+      input_per_1k: 0.00005
+      output_per_1k: 0.00008
+
+  - name: llama-3.3-70b-versatile
+    provider: groq
+    client_class: GroqClient
+    display_name: "Llama 3.3 70B (Groq)"
+    context_window: 131072
+    pricing:
+      input_per_1k: 0.00059
+      output_per_1k: 0.00079
+
+  - name: openai/gpt-oss-120b
+    provider: groq
+    client_class: GroqClient
+    display_name: "OpenAI GPT-OSS 120B (Groq)"
+    context_window: 131072
+    pricing:
+      input_per_1k: 0.00005
+      output_per_1k: 0.00008

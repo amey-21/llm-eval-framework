@@ -1,0 +1,28 @@
+[project]
+name = "llm-eval-framework"
+version = "0.1.0"
+description = "Production LLM Evaluation Framework — benchmarks multiple LLMs across 8 dimensions"
+requires-python = ">=3.11"
+
+dependencies = [
+    "openai>=1.0.0",
+    "groq>=0.9.0",
+    "deepeval>=0.21.0",
+    "datasets>=2.18.0",        # HuggingFace datasets
+    "psycopg2-binary>=2.9.0",  # PostgreSQL driver
+    "pydantic>=2.0.0",         # data validation
+    "loguru>=0.7.0",           # better logging than print()
+    "pytest>=8.0.0",           # testing
+    "python-dotenv>=1.0.0",    # load .env files
+    "httpx>=0.27.0",           # async HTTP client
+    "pyyaml>=6.0.0",           # read YAML configs
+    "fastapi>=0.110.0",        # API server (Week 3)
+    "uvicorn>=0.29.0",         # ASGI server for FastAPI
+    "streamlit>=1.33.0",       # dashboard (Week 3)
+    "plotly>=5.20.0",          # charts
+    "matplotlib"
+    
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

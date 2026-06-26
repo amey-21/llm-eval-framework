@@ -1,0 +1,62 @@
+# .github/workflows/tests.yml
+# Runs on every push to any branch.
+# Fast feedback — no API calls, no cost.
+
+name: Unit Tests
+
+on:
+  push:
+    branches: ["**"]      # every branch
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      # spin up a real PostgreSQL instance for tests
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: llm_eval
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # wait until postgres is actually ready before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"        # cache dependencies between runs
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Apply database schema
+        run: |
+          PGPASSWORD=postgres psql \
+            -h localhost -U postgres -d llm_eval \
+            -f src/db/schema.sql
+        env:
+          POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/llm_eval
+
+      - name: Run unit tests
+        run: pytest tests/ -v --ignore=tests/test_clients.py
+        # we ignore test_clients.py in CI because it makes real API calls
+        # unit tests must be free and fast
+        env:
+          POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/llm_eval
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
