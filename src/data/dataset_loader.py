@@ -129,7 +129,7 @@ class DatasetLoader:
           category:         str
         """
         dataset = load_dataset(
-            "truthful_qa",
+            "truthfulqa/truthful_qa",
             "generation",
             split="validation"
         )
@@ -166,7 +166,7 @@ class DatasetLoader:
           entry_point:      str  (function name)
         """
         dataset = load_dataset(
-            "openai_humaneval",
+            "openai-community/openai_humaneval",
             split="test"
         )
 

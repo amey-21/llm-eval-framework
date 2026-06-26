@@ -53,7 +53,7 @@ jobs:
           POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/llm_eval
 
       - name: Run unit tests
-        run: pytest tests/ -v --ignore=tests/test_clients.py
+        run: pytest tests/ -v --ignore=tests/test_clients.py --ignore=tests/test_dataset_loader.py
         # we ignore test_clients.py in CI because it makes real API calls
         # unit tests must be free and fast
         env:

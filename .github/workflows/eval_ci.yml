@@ -1,6 +1,6 @@
+# .github/workflows/eval_ci.yaml
 name: LLM Eval Regression Check
 
-# when does this run?
 on:
   push:
     branches: [main]
@@ -10,37 +10,27 @@ on:
 jobs:
   regression-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15      # kill the job if it hangs
+    timeout-minutes: 15
 
     steps:
-      # 1. get the code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. set up Python — same version you develop on
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"         # cache pip downloads between runs
+          cache: "pip"
 
-      # 3. install dependencies
       - name: Install dependencies
         run: pip install -e .
 
-      # 4. run unit tests first — fast feedback before expensive API calls
-      - name: Run unit tests
-        run: pytest tests/test_metrics.py tests/test_dataset_loader.py -v
-
-      # 5. run the lightweight CI eval
-      # API keys come from GitHub Secrets — never hardcoded
       - name: Run CI evaluation
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python scripts/run_eval_ci.py
 
-      # 6. check for regressions against committed baseline
       - name: Check for regressions
         run: |
           python src/ci/regression_check.py \
@@ -48,10 +38,9 @@ jobs:
             --baseline results/baseline.json \
             --threshold 0.05
 
-      # 7. upload results as artifact — viewable in GitHub UI
       - name: Upload CI results
         uses: actions/upload-artifact@v4
-        if: always()           # upload even if regression check failed
+        if: always()
         with:
           name: eval-results-${{ github.sha }}
           path: results/ci_run.json

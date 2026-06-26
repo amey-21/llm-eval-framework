@@ -1,3 +1,10 @@
+# tests/test_dataset_loader.py
+#
+# INTEGRATION TESTS — these hit the HuggingFace API and download real data.
+# They are excluded from CI (see .github/workflows/tests.yaml).
+# Run locally before changing dataset_loader.py:
+#   pytest tests/test_dataset_loader.py -v -s
+#
 import pytest
 from src.data.dataset_loader import DatasetLoader, EvalSample
 
