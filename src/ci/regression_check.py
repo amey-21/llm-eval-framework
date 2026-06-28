@@ -63,7 +63,7 @@ def check_regressions(
             current_score = current[model][metric]
             drop = baseline_score - current_score
 
-            if drop > threshold:
+            if round(drop, 4) > threshold:
                 regressions.append({
                     "model": model,
                     "metric": metric,

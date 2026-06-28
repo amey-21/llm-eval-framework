@@ -58,6 +58,7 @@ class GroqClient(LLMClient):
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
+                temperature = 0,
             )
         except Exception as e:
             logger.error(f"Groq API call failed for {self.model_name}: {e}")

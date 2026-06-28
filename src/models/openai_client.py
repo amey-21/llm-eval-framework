@@ -51,6 +51,7 @@ class OpenAIClient(LLMClient):
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
+                temperature = 0,
             )
         except Exception as e:
             logger.error(f"OpenAI API call failed: {e}")
