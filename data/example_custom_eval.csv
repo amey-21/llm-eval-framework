@@ -1,0 +1,11 @@
+id,question,expected_answer,subject
+custom_001,What is the capital of France?,Paris,geography
+custom_002,What does HTTP stand for?,HyperText Transfer Protocol,technology
+custom_003,Who wrote Romeo and Juliet?,William Shakespeare,literature
+custom_004,What is the chemical symbol for gold?,Au,science
+custom_005,In what year did World War II end?,1945,history
+custom_006,What is the largest planet in our solar system?,Jupiter,science
+custom_007,What programming language was created by Guido van Rossum?,Python,technology
+custom_008,What is the square root of 144?,12,mathematics
+custom_009,Which country has the largest population?,China,geography
+custom_010,What is the powerhouse of the cell?,Mitochondria,biology

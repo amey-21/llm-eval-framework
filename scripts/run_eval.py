@@ -7,6 +7,8 @@ from src.models.openai_client import OpenAIClient
 from src.models.groq_client import GroqClient
 from src.evaluator import Evaluator
 from src.metrics.factual_accuracy import FactualAccuracyMetric
+from src.data.dataset_loader import DatasetLoader  # ← correct
+loader = DatasetLoader()
 
 _accuracy_metric = FactualAccuracyMetric()
 
@@ -26,8 +28,10 @@ def main():
         GroqClient("openai/gpt-oss-120b"),
     ]
 
-    loader = DatasetLoader()
-    samples = loader.load(args.dataset, sample_size=args.sample_size)
+    # loader = DatasetLoader()
+    # samples = loader.load(args.dataset, sample_size=args.sample_size)
+    samples = loader.load("custom", custom_path="data/example_custom_eval.csv")
+    evaluator = Evaluator(clients=clients, run_name="custom_eval_v1")
 
     evaluator = Evaluator(
         clients=clients,

@@ -60,3 +60,12 @@ jobs:
           POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/llm_eval
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+      - name: Run unit tests
+        run: |
+          pytest tests/test_metrics.py \
+                tests/test_dataset_loader.py::test_custom_dataset_loads_correctly \
+                tests/test_dataset_loader.py::test_custom_dataset_missing_column_raises_error \
+                tests/test_dataset_loader.py::test_custom_dataset_missing_file_raises_error \
+                tests/test_dataset_loader.py::test_custom_dataset_requires_path \
+                -v

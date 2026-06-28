@@ -7,6 +7,9 @@
 #
 import pytest
 from src.data.dataset_loader import DatasetLoader, EvalSample
+import tempfile
+import csv
+import os
 
 
 @pytest.fixture
@@ -71,3 +74,69 @@ def test_sample_questions_are_printable(loader):
         print(f"\n--- {sample.id} ({sample.subject}) ---")
         print(sample.question)
         print(f"Expected: {sample.expected_answer}")
+
+def test_custom_dataset_loads_correctly():
+    """Create a temp CSV and verify it loads into EvalSamples."""
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.csv', delete=False, newline=''
+    ) as f:
+        writer = csv.DictWriter(
+            f, fieldnames=['question', 'expected_answer', 'subject']
+        )
+        writer.writeheader()
+        writer.writerows([
+            {
+                'question': 'What is 2+2?',
+                'expected_answer': '4',
+                'subject': 'math'
+            },
+            {
+                'question': 'Capital of France?',
+                'expected_answer': 'Paris',
+                'subject': 'geography'
+            },
+        ])
+        tmp_path = f.name
+
+    try:
+        loader = DatasetLoader()
+        samples = loader.load("custom", custom_path=tmp_path, sample_size=10)
+
+        assert len(samples) == 2
+        assert samples[0].dataset == "custom"
+        assert samples[0].expected_answer == "4"
+        assert samples[1].expected_answer == "Paris"
+        assert samples[0].subject == "math"
+    finally:
+        os.unlink(tmp_path)     # clean up temp file
+
+
+def test_custom_dataset_missing_column_raises_error():
+    """Missing required column gives a clear error message."""
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.csv', delete=False, newline=''
+    ) as f:
+        writer = csv.DictWriter(f, fieldnames=['question'])
+        writer.writeheader()
+        writer.writerow({'question': 'test?'})
+        tmp_path = f.name
+
+    try:
+        loader = DatasetLoader()
+        with pytest.raises(ValueError, match="missing required columns"):
+            loader.load("custom", custom_path=tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_custom_dataset_missing_file_raises_error():
+    loader = DatasetLoader()
+    with pytest.raises(FileNotFoundError):
+        loader.load("custom", custom_path="nonexistent_file.csv")
+
+
+def test_custom_dataset_requires_path():
+    """Calling custom without a path gives a clear error."""
+    loader = DatasetLoader()
+    with pytest.raises(ValueError, match="custom_path is required"):
+        loader.load("custom")

@@ -239,3 +239,73 @@ class TestMetricContract:
                 passed=False,
                 reasoning="test",
             )
+
+
+class TestOpenEndedScoring:
+    """
+    Tests the short vs long answer scoring strategy.
+    This was discovered as a real bug when running custom datasets.
+    """
+    metric = FactualAccuracyMetric()
+
+    def make_custom_sample(self, expected: str) -> EvalSample:
+        return EvalSample(
+            id="test_custom_001",
+            dataset="custom",
+            question="test question",
+            expected_answer=expected,
+        )
+
+    def test_short_answer_full_sentence_response_scores_high(self):
+        """
+        "Paris" expected, "The capital of France is Paris" given.
+        Should score high — model is correct, just verbose.
+        """
+        result = self.metric.compute(
+            self.make_custom_sample("Paris"),
+            make_response("The capital of France is Paris.")
+        )
+        assert result.score >= 0.8, (
+            f"Expected high score for correct verbose answer, got {result.score}"
+        )
+
+    def test_short_number_answer_scores_high(self):
+        """
+        "12" expected, "The square root of 144 is 12" given.
+        """
+        result = self.metric.compute(
+            self.make_custom_sample("12"),
+            make_response("The square root of 144 is 12.")
+        )
+        assert result.score >= 0.8
+
+    def test_short_answer_wrong_response_scores_low(self):
+        """
+        "Paris" expected, "The capital of France is London" given.
+        """
+        result = self.metric.compute(
+            self.make_custom_sample("Paris"),
+            make_response("The capital of France is London.")
+        )
+        assert result.score == 0.0
+
+    def test_short_answer_uses_recall_strategy(self):
+        """Verify the strategy field is set correctly."""
+        result = self.metric.compute(
+            self.make_custom_sample("Paris"),
+            make_response("The capital of France is Paris.")
+        )
+        assert result.raw_value["strategy"] == "recall_only"
+
+    def test_long_answer_uses_f1_strategy(self):
+        """Long expected answers should use F1."""
+        result = self.metric.compute(
+            self.make_custom_sample(
+                "Refunds are processed within fourteen business days"
+            ),
+            make_response(
+                "Refunds are processed within fourteen business days "
+                "of receiving the returned item."
+            )
+        )
+        assert result.raw_value["strategy"] == "f1"

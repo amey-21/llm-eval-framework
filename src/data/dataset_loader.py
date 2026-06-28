@@ -36,25 +36,21 @@ class DatasetLoader:
     single clean interface the rest of the system uses.
     """
 
-    SUPPORTED_DATASETS = ["mmlu", "truthfulqa", "humaneval"]
+    SUPPORTED_DATASETS = ["mmlu", "truthfulqa", "humaneval", "custom"]
 
     def __init__(self, seed: int = 42):
         self.rng = random.Random(seed)
 
-    # def load(self, dataset_name: str, sample_size: int = 50, seed: int = 42) -> list[EvalSample]:
-    def load(self, dataset_name: str, sample_size: int = 50, seed: int = None) -> list[EvalSample]:
-        if seed is not None:
-            random.seed(seed)
+    def load(
+        self,
+        dataset_name: str,
+        sample_size: int = 50,
+        seed: int = None,
+        custom_path: str = None,    # ← new parameter
+    ) -> list[EvalSample]:
         """
-        Public interface — loads any supported dataset.
-        
-        Args:
-            dataset_name: one of "mmlu", "truthfulqa", "humaneval"
-            sample_size: how many questions to load (start small,
-                         full datasets cost money to evaluate)
-        
-        Returns:
-            list of EvalSample — same format regardless of source
+        custom_path is required when dataset_name == "custom".
+        Ignored for all other datasets.
         """
         if dataset_name not in self.SUPPORTED_DATASETS:
             raise ValueError(
@@ -62,9 +58,19 @@ class DatasetLoader:
                 f"Supported: {self.SUPPORTED_DATASETS}"
             )
 
+        if dataset_name == "custom":
+            if custom_path is None:
+                raise ValueError(
+                    "custom_path is required when dataset_name='custom'. "
+                    "Example: loader.load('custom', custom_path='data/my_eval.csv')"
+                )
+            return self._load_custom(custom_path, sample_size, seed)
+
+        if seed is not None:
+            random.seed(seed)
+
         logger.info(f"Loading {dataset_name} (sample_size={sample_size})")
 
-        # dispatch to the right private loader
         loaders = {
             "mmlu": self._load_mmlu,
             "truthfulqa": self._load_truthfulqa,
@@ -198,4 +204,97 @@ class DatasetLoader:
                 }
             ))
 
+        return samples
+    
+    def _load_custom(
+        self,
+        path: str,
+        sample_size: int,
+        seed: int = None,
+    ) -> list[EvalSample]:
+        """
+        Load a user-provided CSV as EvalSamples.
+
+        Required columns:  question, expected_answer
+        Optional columns:  id, subject, choices
+
+        Why CSV? It's the lowest friction format — any spreadsheet,
+        database export, or data pipeline can produce a CSV.
+        We deliberately avoid requiring JSON or YAML — those create
+        barriers for non-engineers who want to use the framework.
+        """
+        import csv
+        from pathlib import Path
+
+        csv_path = Path(path)
+        if not csv_path.exists():
+            raise FileNotFoundError(
+                f"Custom dataset not found: {path}\n"
+                f"Current directory: {Path.cwd()}"
+            )
+
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # validate required columns exist
+        if not rows:
+            raise ValueError(f"CSV is empty: {path}")
+
+        required_columns = {"question", "expected_answer"}
+        actual_columns = set(rows[0].keys())
+        missing = required_columns - actual_columns
+
+        if missing:
+            raise ValueError(
+                f"CSV missing required columns: {missing}\n"
+                f"Found columns: {actual_columns}\n"
+                f"Required: {required_columns}"
+            )
+
+        # sample if needed
+        if seed is not None:
+            random.seed(seed)
+
+        if len(rows) > sample_size:
+            rows = random.sample(rows, sample_size)
+
+        samples = []
+        for i, row in enumerate(rows):
+            # auto-generate id if not provided
+            sample_id = row.get("id", "").strip() or f"custom_{i:04d}"
+
+            # handle optional choices column
+            choices = None
+            if "choices" in row and row["choices"].strip():
+                choices = [c.strip() for c in row["choices"].split("|")]
+
+            # build question with choices if MCQ
+            question = row["question"].strip()
+            if choices:
+                choices_text = "\n".join([
+                    f"{letter}. {text}"
+                    for letter, text in zip("ABCD", choices)
+                ])
+                question = (
+                    f"{question}\n\n{choices_text}\n\n"
+                    f"Answer with just the letter A, B, C, or D."
+                )
+
+            samples.append(EvalSample(
+                id=sample_id,
+                dataset="custom",
+                question=question,
+                expected_answer=row["expected_answer"].strip(),
+                choices=choices,
+                subject=row.get("subject", "").strip() or None,
+                metadata={
+                    "source_file": str(csv_path.name),
+                    "original_row": i,
+                }
+            ))
+
+        logger.info(
+            f"Loaded {len(samples)} samples from custom dataset: {csv_path.name}"
+        )
         return samples

@@ -68,39 +68,71 @@ class FactualAccuracyMetric(BaseMetric):
         self, sample: EvalSample, response: LLMResponse
     ) -> MetricResult:
         """
-        Token overlap scoring for open-ended answers.
+        Scores open-ended answers using token overlap.
         
-        Why token overlap instead of exact match?
-        "The mitochondria produces energy" and
-        "Energy is produced by mitochondria" mean the same thing
-        but share no exact substring.
+        Two strategies based on expected answer length:
         
-        Token overlap (shared words / total words) captures
-        semantic similarity without needing an LLM.
-        This is called F1 token overlap — standard in QA evaluation.
+        SHORT expected answer (≤3 tokens, e.g. "Paris", "12", "Au"):
+            Use RECALL only — did the response contain the answer?
+            Precision doesn't matter — the model should explain itself.
+        
+        LONG expected answer (>3 tokens):
+            Use F1 — balance between containing the answer and
+            not hallucinating irrelevant content.
         """
-        response_tokens = set(response.content.lower().split())
-        expected_tokens = set(sample.expected_answer.lower().split())
+        # normalize both strings
+        def normalize(text: str) -> set[str]:
+            stopwords = {"the", "a", "an", "is", "it", "of",
+                        "and", "or", "to", "for", "in", "on"}
+            tokens = set(text.lower().split())
+            # strip punctuation from each token
+            import string
+            tokens = {t.strip(string.punctuation) for t in tokens}
+            tokens -= stopwords
+            tokens.discard("")    # remove empty strings after stripping
+            return tokens
 
-        # remove stopwords that add noise
-        stopwords = {"the", "a", "an", "is", "it", "of", "and", "or", "to"}
-        response_tokens -= stopwords
-        expected_tokens -= stopwords
+        response_tokens = normalize(response.content)
+        expected_tokens = normalize(sample.expected_answer)
 
         if not expected_tokens:
             return MetricResult(
                 metric_name=self.name,
                 score=0.0,
                 passed=False,
-                reasoning="Expected answer is empty after stopword removal",
+                reasoning="Expected answer is empty after normalization",
                 raw_value={}
             )
 
         overlap = response_tokens & expected_tokens
+
+        # SHORT answer strategy: recall only
+        # "did the model say the right thing?" not "was everything it said right?"
+        if len(expected_tokens) <= 3:
+            recall = len(overlap) / len(expected_tokens)
+            score = recall
+            reasoning = (
+                f"Short answer — recall only: {recall:.3f} | "
+                f"expected={expected_tokens} | "
+                f"overlap={overlap}"
+            )
+            return MetricResult(
+                metric_name=self.name,
+                score=round(score, 4),
+                passed=score >= self.threshold,
+                reasoning=reasoning,
+                raw_value={
+                    "strategy": "recall_only",
+                    "recall": recall,
+                    "expected_tokens": list(expected_tokens),
+                    "overlap_tokens": list(overlap),
+                }
+            )
+
+        # LONG answer strategy: F1
         precision = len(overlap) / len(response_tokens) if response_tokens else 0
         recall = len(overlap) / len(expected_tokens)
 
-        # F1 = harmonic mean of precision and recall
         if precision + recall == 0:
             f1 = 0.0
         else:
@@ -111,11 +143,12 @@ class FactualAccuracyMetric(BaseMetric):
             score=round(f1, 4),
             passed=f1 >= self.threshold,
             reasoning=(
-                f"Token overlap F1={f1:.3f} | "
-                f"overlap={len(overlap)} tokens | "
-                f"precision={precision:.3f} recall={recall:.3f}"
+                f"Long answer — F1={f1:.3f} | "
+                f"precision={precision:.3f} recall={recall:.3f} | "
+                f"overlap={len(overlap)} tokens"
             ),
             raw_value={
+                "strategy": "f1",
                 "f1": f1,
                 "precision": precision,
                 "recall": recall,
